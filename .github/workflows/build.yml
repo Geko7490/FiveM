@@ -1,0 +1,44 @@
+name: Build FiveM Resource
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate Lua syntax
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.4
+          for f in fxmanifest.lua config.lua client.lua server.lua; do
+            luac5.4 -p "$f"
+          done
+      - name: Validate resource files
+        run: |
+          test -s fxmanifest.lua
+          test -s config.lua
+          test -s client.lua
+          test -s server.lua
+          test -s html/index.html
+          test -s html/style.css
+          test -s html/app.js
+      - name: Package install-ready resource
+        run: |
+          mkdir -p dist/vex-fivem/html
+          cp fxmanifest.lua config.lua client.lua server.lua README.md dist/vex-fivem/
+          cp html/index.html html/style.css html/app.js dist/vex-fivem/html/
+          cd dist
+          zip -r VEX-FiveM.zip vex-fivem
+      - name: Upload downloadable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: VEX-FiveM
+          path: dist/VEX-FiveM.zip
+          retention-days: 30
