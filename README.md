@@ -9,10 +9,10 @@ An ACE-gated, server-authorized FiveM development resource with a dark purple NU
 4. Restart the server. In game, run `/vexpanel`.
 
 ## Features
-- Player markers: nearby players appear as map blips (not wall-through rendering).
+- Player markers: nearby streamed players are outlined (including through geometry where supported by the FiveM client) and appear as map blips. Not a global player scanner.
 - Aim training: manual crosshair overlay, **no aimbot**.
 - God mode: authorized player invincibility.
 - Speed control: sprint multiplier, capped at 2x.
-- Toggle state round-trips through server ACE authorization.
+- Built-in Lua module: coordinates HUD (reviewed and preinstalled, no arbitrary Lua execution).\n- Toggle state round-trips through server ACE authorization.
 
-Designed for owned/authorized test servers. Not a client injector, anti-cheat bypass or public-server cheat. All features start disabled.
+All player highlighting is limited to locally streamed entities; admin authorization is required. Aimbot is not implemented; the aim option remains a manual training guide.\n\nDesigned for owned/authorized test servers. Not a client injector, anti-cheat bypass or public-server cheat. All features start disabled.
