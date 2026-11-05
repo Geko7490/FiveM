@@ -1,6 +1,8 @@
 local permitted, open = false, false
 local settings = {esp=false, god=false, speed=1.0, aim=false}
 local markers = {}
+local outlines = {}
+local modules = {coords=false}
 local function sendState()
     SendNUIMessage({type='state', settings=settings, maxSpeed=Config.MaxSpeed})
 end
@@ -12,6 +14,9 @@ local function reset()
     SetRunSprintMultiplierForPlayer(PlayerId(), 1.0)
     for _, blip in pairs(markers) do if DoesBlipExist(blip) then RemoveBlip(blip) end end
     markers = {}
+    for ped in pairs(outlines) do if DoesEntityExist(ped) then SetEntityDrawOutline(ped, false) end end
+    outlines = {}
+    modules.coords = false
 end
 RegisterCommand(Config.Command, function()
     if open then
@@ -40,6 +45,8 @@ RegisterNetEvent('vex:applyState', function(name, value)
     if name == 'god' then
         SetEntityInvincible(PlayerPedId(), value)
         SetPlayerInvincible(PlayerId(), value)
+    elseif name == 'coords' then
+        modules.coords = value
     elseif name == 'speed' then
         SetRunSprintMultiplierForPlayer(PlayerId(), value)
     end
@@ -67,12 +74,20 @@ CreateThread(function()
             local ownPed = PlayerPedId()
             local pos = GetEntityCoords(ownPed)
             local active = {}
+            local visiblePeds = {}
             for _, player in ipairs(GetActivePlayers()) do
                 if player ~= PlayerId() then
                     local ped = GetPlayerPed(player)
                     if DoesEntityExist(ped) and #(GetEntityCoords(ped)-pos) < Config.EspDistance then
                         local id = GetPlayerServerId(player)
                         active[id] = true
+                        visiblePeds[ped] = true
+                        if not outlines[ped] then
+                            SetEntityDrawOutlineColor(155, 100, 255, 220)
+                            SetEntityDrawOutlineShader(1)
+                            SetEntityDrawOutline(ped, true)
+                            outlines[ped] = true
+                        end
                         if not markers[id] or not DoesBlipExist(markers[id]) then
                             markers[id] = AddBlipForEntity(ped)
                             SetBlipSprite(markers[id], 1)
@@ -82,10 +97,17 @@ CreateThread(function()
                     end
                 end
             end
+            for ped in pairs(outlines) do
+                if not visiblePeds[ped] then
+                    if DoesEntityExist(ped) then SetEntityDrawOutline(ped, false) end
+                    outlines[ped] = nil
+                end
+            end
             for id, blip in pairs(markers) do
                 if not active[id] then if DoesBlipExist(blip) then RemoveBlip(blip) end markers[id]=nil end
             end
         else
+            for ped in pairs(outlines) do if DoesEntityExist(ped) then SetEntityDrawOutline(ped, false) end outlines[ped] = nil end
             for id, blip in pairs(markers) do if DoesBlipExist(blip) then RemoveBlip(blip) end markers[id]=nil end
         end
     end
@@ -104,5 +126,21 @@ AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then
         reset()
         SetNuiFocus(false,false)
+    end
+end)
+-- Built-in, reviewed Lua module: position HUD. Arbitrary uploaded Lua is not executed.
+CreateThread(function()
+    while true do
+        if permitted and modules.coords then
+            Wait(0)
+            local p = GetEntityCoords(PlayerPedId())
+            SetTextFont(4)
+            SetTextScale(0.0, 0.34)
+            SetTextColour(190, 160, 255, 240)
+            SetTextOutline()
+            BeginTextCommandDisplayText('STRING')
+            AddTextComponentSubstringPlayerName(('X %.1f  Y %.1f  Z %.1f'):format(p.x,p.y,p.z))
+            EndTextCommandDisplayText(0.02, 0.85)
+        else Wait(300) end
     end
 end)
